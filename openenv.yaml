@@ -1,0 +1,99 @@
+name: code-review-assistant
+version: 1.0.0
+description: AI-powered code review environment with realistic PR scenarios for the OpenEnv Course Round 1 competition
+
+action_space:
+  type: object
+  properties:
+    action_type:
+      type: string
+      enum: [add_comment, request_changes, approve, view_file]
+      description: The type of action to perform
+    target_file:
+      type: string
+      description: Target file path (required for add_comment and view_file)
+    line_number:
+      type: integer
+      description: Line number for comment (optional for add_comment)
+    comment_text:
+      type: string
+      description: Comment text (required for add_comment)
+  required:
+    - action_type
+
+observation_space:
+  type: object
+  properties:
+    pull_request_id:
+      type: string
+      description: Unique identifier for the pull request
+    files_changed:
+      type: array
+      items:
+        type: string
+      description: List of file paths modified in the PR
+    diff_content:
+      type: object
+      description: Mapping of file paths to unified diff strings
+      additionalProperties:
+        type: string
+    existing_comments:
+      type: array
+      items:
+        type: object
+        properties:
+          file_path:
+            type: string
+          line_number:
+            type: integer
+          comment_text:
+            type: string
+          timestamp:
+            type: integer
+      description: List of review comments added by the agent
+    review_status:
+      type: string
+      enum: [in_progress, approved, changes_requested]
+      description: Current status of the review
+    action_count:
+      type: integer
+      description: Number of actions taken so far
+    full_file_content:
+      type: object
+      description: Full file contents (populated by view_file action)
+      additionalProperties:
+        type: string
+    error_message:
+      type: string
+      description: Error message if last action was invalid
+  required:
+    - pull_request_id
+    - files_changed
+    - diff_content
+    - existing_comments
+    - review_status
+    - action_count
+
+tasks:
+  - id: easy
+    difficulty: easy
+    description: Simple PR with 1-2 files and obvious issues requiring basic pattern recognition
+    max_actions: 50
+    
+  - id: medium
+    difficulty: medium
+    description: Multi-file PR with 3-4 files requiring cross-file analysis and context understanding
+    max_actions: 50
+    
+  - id: hard
+    difficulty: hard
+    description: Complex PR with 5+ files and subtle security and architectural issues requiring deep reasoning
+    max_actions: 50
+
+environment:
+  entry_point: src.environment:CodeReviewEnvironment
+  dependencies:
+    - pydantic>=2.0.0
+    - openai>=1.0.0
+    - pytest>=7.0.0
+    - hypothesis>=6.0.0

@@ -1,0 +1,84 @@
+{
+  "task_id": "medium",
+  "difficulty": "medium",
+  "pull_request": {
+    "pr_id": "PR-002",
+    "title": "Implement user session management system",
+    "description": "This PR implements a session management system with user login tracking, session storage, and cleanup utilities. The system tracks active sessions and provides methods for session validation and expiration.",
+    "files": {
+      "session.py": {
+        "path": "session.py",
+        "content": "\"\"\"Session management module.\"\"\"\nimport time\nfrom typing import Optional\nfrom storage import SessionStorage\n\nclass SessionManager:\n    \"\"\"Manages user sessions.\"\"\"\n    \n    def __init__(self):\n        self.storage = SessionStorage()\n        self.session_timeout = 3600  # 1 hour in seconds\n    \n    def create_session(self, user_id: str) -> str:\n        \"\"\"Create a new session for user.\"\"\"\n        session_id = self._generate_session_id(user_id)\n        session_data = {\n            'user_id': user_id,\n            'created_at': time.time(),\n            'last_accessed': time.time()\n        }\n        self.storage.save_session(session_id, session_data)\n        return session_id\n    \n    def validate_session(self, session_id: str) -> bool:\n        \"\"\"Check if session is valid and not expired.\"\"\"\n        session_data = self.storage.get_session(session_id)\n        if not session_data:\n            return False\n        \n        current_time = time.time()\n        if current_time - session_data['last_accessed'] > self.session_timeout:\n            self.storage.delete_session(session_id)\n            return False\n        \n        # Update last accessed time\n        session_data['last_accessed'] = current_time\n        self.storage.save_session(session_id, session_data)\n        return True\n    \n    def _generate_session_id(self, user_id: str) -> str:\n        \"\"\"Generate unique session ID.\"\"\"\n        import random\n        return f\"{user_id}_{int(time.time())}_{random.randint(1000, 9999)}\"\n    \n    def get_user_id(self, session_id: str) -> Optional[str]:\n        \"\"\"Get user ID from session.\"\"\"\n        session_data = self.storage.get_session(session_id)\n        if session_data:\n            return session_data['user_id']\n        return None\n",
+        "language": "python"
+      },
+      "storage.py": {
+        "path": "storage.py",
+        "content": "\"\"\"Session storage implementation.\"\"\"\nimport json\nimport os\nfrom typing import Optional, Dict, Any\n\nclass SessionStorage:\n    \"\"\"Handles session data persistence.\"\"\"\n    \n    def __init__(self, storage_path: str = 'sessions.json'):\n        self.storage_path = storage_path\n        self._sessions = self._load_sessions()\n    \n    def _load_sessions(self) -> Dict[str, Any]:\n        \"\"\"Load sessions from file.\"\"\"\n        if os.path.exists(self.storage_path):\n            with open(self.storage_path, 'r') as f:\n                return json.load(f)\n        return {}\n    \n    def _save_to_file(self):\n        \"\"\"Persist sessions to file.\"\"\"\n        with open(self.storage_path, 'w') as f:\n            json.dump(self._sessions, f)\n    \n    def save_session(self, session_id: str, session_data: Dict[str, Any]):\n        \"\"\"Save session data.\"\"\"\n        self._sessions[session_id] = session_data\n        self._save_to_file()\n    \n    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:\n        \"\"\"Retrieve session data.\"\"\"\n        return self._sessions.get(session_id)\n    \n    def delete_session(self, session_id: str):\n        \"\"\"Remove session from storage.\"\"\"\n        if session_id in self._sessions:\n            del self._sessions[session_id]\n            self._save_to_file()\n    \n    def get_all_sessions(self) -> Dict[str, Any]:\n        \"\"\"Get all active sessions.\"\"\"\n        return self._sessions\n",
+        "language": "python"
+      },
+      "cleanup.py": {
+        "path": "cleanup.py",
+        "content": "\"\"\"Session cleanup utilities.\"\"\"\nimport time\nfrom storage import SessionStorage\n\nclass SessionCleanup:\n    \"\"\"Handles cleanup of expired sessions.\"\"\"\n    \n    def __init__(self, timeout: int = 3600):\n        self.storage = SessionStorage()\n        self.timeout = timeout\n    \n    def cleanup_expired_sessions(self):\n        \"\"\"Remove all expired sessions.\"\"\"\n        current_time = time.time()\n        sessions = self.storage.get_all_sessions()\n        expired_count = 0\n        \n        for session_id, session_data in sessions.items():\n            if current_time - session_data['last_accessed'] > self.timeout:\n                self.storage.delete_session(session_id)\n                expired_count += 1\n        \n        return expired_count\n    \n    def get_session_stats(self):\n        \"\"\"Get statistics about active sessions.\"\"\"\n        sessions = self.storage.get_all_sessions()\n        current_time = time.time()\n        \n        active_count = 0\n        expired_count = 0\n        \n        for session_data in sessions.values():\n            if current_time - session_data['last_accessed'] > self.timeout:\n                expired_count += 1\n            else:\n                active_count += 1\n        \n        return {\n            'total': len(sessions),\n            'active': active_count,\n            'expired': expired_count\n        }\n",
+        "language": "python"
+      },
+      "auth.py": {
+        "path": "auth.py",
+        "content": "\"\"\"Authentication integration module.\"\"\"\nfrom session import SessionManager\nfrom typing import Optional\n\nclass AuthService:\n    \"\"\"Handles user authentication with session management.\"\"\"\n    \n    def __init__(self):\n        self.session_manager = SessionManager()\n        self.failed_attempts = {}\n    \n    def login(self, username: str, password: str) -> Optional[str]:\n        \"\"\"Authenticate user and create session.\"\"\"\n        # Check if user is locked out\n        if username in self.failed_attempts:\n            if self.failed_attempts[username] >= 5:\n                return None\n        \n        # Verify credentials (simplified for demo)\n        if self._verify_credentials(username, password):\n            # Reset failed attempts\n            if username in self.failed_attempts:\n                del self.failed_attempts[username]\n            \n            # Create session\n            session_id = self.session_manager.create_session(username)\n            return session_id\n        else:\n            # Track failed attempt\n            if username not in self.failed_attempts:\n                self.failed_attempts[username] = 0\n            self.failed_attempts[username] += 1\n            return None\n    \n    def logout(self, session_id: str):\n        \"\"\"End user session.\"\"\"\n        self.session_manager.storage.delete_session(session_id)\n    \n    def verify_session(self, session_id: str) -> bool:\n        \"\"\"Check if session is valid.\"\"\"\n        return self.session_manager.validate_session(session_id)\n    \n    def _verify_credentials(self, username: str, password: str) -> bool:\n        \"\"\"Verify username and password.\"\"\"\n        # Simplified credential check for demo\n        return len(username) > 0 and len(password) > 0\n",
+        "language": "python"
+      }
+    },
+    "diffs": {
+      "session.py": "--- /dev/null\n+++ b/session.py\n@@ -0,0 +1,50 @@\n+\"\"\"Session management module.\"\"\"\n+import time\n+from typing import Optional\n+from storage import SessionStorage\n+\n+class SessionManager:\n+    \"\"\"Manages user sessions.\"\"\"\n+    \n+    def __init__(self):\n+        self.storage = SessionStorage()\n+        self.session_timeout = 3600  # 1 hour in seconds\n+    \n+    def create_session(self, user_id: str) -> str:\n+        \"\"\"Create a new session for user.\"\"\"\n+        session_id = self._generate_session_id(user_id)\n+        session_data = {\n+            'user_id': user_id,\n+            'created_at': time.time(),\n+            'last_accessed': time.time()\n+        }\n+        self.storage.save_session(session_id, session_data)\n+        return session_id\n+    \n+    def validate_session(self, session_id: str) -> bool:\n+        \"\"\"Check if session is valid and not expired.\"\"\"\n+        session_data = self.storage.get_session(session_id)\n+        if not session_data:\n+            return False\n+        \n+        current_time = time.time()\n+        if current_time - session_data['last_accessed'] > self.session_timeout:\n+            self.storage.delete_session(session_id)\n+            return False\n+        \n+        # Update last accessed time\n+        session_data['last_accessed'] = current_time\n+        self.storage.save_session(session_id, session_data)\n+        return True\n+    \n+    def _generate_session_id(self, user_id: str) -> str:\n+        \"\"\"Generate unique session ID.\"\"\"\n+        import random\n+        return f\"{user_id}_{int(time.time())}_{random.randint(1000, 9999)}\"\n+    \n+    def get_user_id(self, session_id: str) -> Optional[str]:\n+        \"\"\"Get user ID from session.\"\"\"\n+        session_data = self.storage.get_session(session_id)\n+        if session_data:\n+            return session_data['user_id']\n+        return None\n",
+      "storage.py": "--- /dev/null\n+++ b/storage.py\n@@ -0,0 +1,44 @@\n+\"\"\"Session storage implementation.\"\"\"\n+import json\n+import os\n+from typing import Optional, Dict, Any\n+\n+class SessionStorage:\n+    \"\"\"Handles session data persistence.\"\"\"\n+    \n+    def __init__(self, storage_path: str = 'sessions.json'):\n+        self.storage_path = storage_path\n+        self._sessions = self._load_sessions()\n+    \n+    def _load_sessions(self) -> Dict[str, Any]:\n+        \"\"\"Load sessions from file.\"\"\"\n+        if os.path.exists(self.storage_path):\n+            with open(self.storage_path, 'r') as f:\n+                return json.load(f)\n+        return {}\n+    \n+    def _save_to_file(self):\n+        \"\"\"Persist sessions to file.\"\"\"\n+        with open(self.storage_path, 'w') as f:\n+            json.dump(self._sessions, f)\n+    \n+    def save_session(self, session_id: str, session_data: Dict[str, Any]):\n+        \"\"\"Save session data.\"\"\"\n+        self._sessions[session_id] = session_data\n+        self._save_to_file()\n+    \n+    def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:\n+        \"\"\"Retrieve session data.\"\"\"\n+        return self._sessions.get(session_id)\n+    \n+    def delete_session(self, session_id: str):\n+        \"\"\"Remove session from storage.\"\"\"\n+        if session_id in self._sessions:\n+            del self._sessions[session_id]\n+            self._save_to_file()\n+    \n+    def get_all_sessions(self) -> Dict[str, Any]:\n+        \"\"\"Get all active sessions.\"\"\"\n+        return self._sessions\n",
+      "cleanup.py": "--- /dev/null\n+++ b/cleanup.py\n@@ -0,0 +1,42 @@\n+\"\"\"Session cleanup utilities.\"\"\"\n+import time\n+from storage import SessionStorage\n+\n+class SessionCleanup:\n+    \"\"\"Handles cleanup of expired sessions.\"\"\"\n+    \n+    def __init__(self, timeout: int = 3600):\n+        self.storage = SessionStorage()\n+        self.timeout = timeout\n+    \n+    def cleanup_expired_sessions(self):\n+        \"\"\"Remove all expired sessions.\"\"\"\n+        current_time = time.time()\n+        sessions = self.storage.get_all_sessions()\n+        expired_count = 0\n+        \n+        for session_id, session_data in sessions.items():\n+            if current_time - session_data['last_accessed'] > self.timeout:\n+                self.storage.delete_session(session_id)\n+                expired_count += 1\n+        \n+        return expired_count\n+    \n+    def get_session_stats(self):\n+        \"\"\"Get statistics about active sessions.\"\"\"\n+        sessions = self.storage.get_all_sessions()\n+        current_time = time.time()\n+        \n+        active_count = 0\n+        expired_count = 0\n+        \n+        for session_data in sessions.values():\n+            if current_time - session_data['last_accessed'] > self.timeout:\n+                expired_count += 1\n+            else:\n+                active_count += 1\n+        \n+        return {\n+            'total': len(sessions),\n+            'active': active_count,\n+            'expired': expired_count\n+        }\n",
+      "auth.py": "--- /dev/null\n+++ b/auth.py\n@@ -0,0 +1,49 @@\n+\"\"\"Authentication integration module.\"\"\"\n+from session import SessionManager\n+from typing import Optional\n+\n+class AuthService:\n+    \"\"\"Handles user authentication with session management.\"\"\"\n+    \n+    def __init__(self):\n+        self.session_manager = SessionManager()\n+        self.failed_attempts = {}\n+    \n+    def login(self, username: str, password: str) -> Optional[str]:\n+        \"\"\"Authenticate user and create session.\"\"\"\n+        # Check if user is locked out\n+        if username in self.failed_attempts:\n+            if self.failed_attempts[username] >= 5:\n+                return None\n+        \n+        # Verify credentials (simplified for demo)\n+        if self._verify_credentials(username, password):\n+            # Reset failed attempts\n+            if username in self.failed_attempts:\n+                del self.failed_attempts[username]\n+            \n+            # Create session\n+            session_id = self.session_manager.create_session(username)\n+            return session_id\n+        else:\n+            # Track failed attempt\n+            if username not in self.failed_attempts:\n+                self.failed_attempts[username] = 0\n+            self.failed_attempts[username] += 1\n+            return None\n+    \n+    def logout(self, session_id: str):\n+        \"\"\"End user session.\"\"\"\n+        self.session_manager.storage.delete_session(session_id)\n+    \n+    def verify_session(self, session_id: str) -> bool:\n+        \"\"\"Check if session is valid.\"\"\"\n+        return self.session_manager.validate_session(session_id)\n+    \n+    def _verify_credentials(self, username: str, password: str) -> bool:\n+        \"\"\"Verify username and password.\"\"\"\n+        # Simplified credential check for demo\n+        return len(username) > 0 and len(password) > 0\n"
+    }
+  },
+  "max_actions": 50,
+  "ground_truth": {
+    "issues": [
+      {
+        "issue_id": "MEDIUM-001",
+        "file_path": "session.py",
+        "line_number": 42,
+        "issue_type": "security",
+        "severity": "major",
+        "description": "Weak session ID generation using predictable random - The session ID uses random.randint() which is not cryptographically secure. An attacker could predict session IDs. Use secrets.token_urlsafe() or uuid.uuid4() instead."
+      },
+      {
+        "issue_id": "MEDIUM-002",
+        "file_path": "cleanup.py",
+        "line_number": 17,
+        "issue_type": "bug",
+        "severity": "critical",
+        "description": "Iterating over dictionary while modifying it - The code iterates over sessions.items() and calls delete_session() which modifies the underlying dictionary, causing a RuntimeError. Create a list of session IDs to delete first, then iterate over that list."
+      },
+      {
+        "issue_id": "MEDIUM-003",
+        "file_path": "storage.py",
+        "line_number": 22,
+        "issue_type": "bug",
+        "severity": "major",
+        "description": "Race condition in file operations - Multiple SessionStorage instances can write to the same file simultaneously, causing data corruption. The _save_to_file method should use file locking or atomic writes to prevent concurrent modification issues."
+      },
+      {
+        "issue_id": "MEDIUM-004",
+        "file_path": "auth.py",
+        "line_number": 16,
+        "issue_type": "security",
+        "severity": "major",
+        "description": "No lockout expiration mechanism - Failed login attempts are tracked but never expire or reset (except on successful login). An attacker could permanently lock out users by making 5 failed attempts. Implement time-based lockout expiration."
+      },
+      {
+        "issue_id": "MEDIUM-005",
+        "file_path": "session.py",
+        "line_number": 36,
+        "issue_type": "bug",
+        "severity": "minor",
+        "description": "Session data mutation without proper synchronization - The validate_session method modifies session_data['last_accessed'] and saves it back, but if multiple requests validate the same session concurrently, this could lead to race conditions with the storage layer."
+      }
+    ],
+    "correct_decision": "request_changes",
+    "severity_threshold": "major"
+  }
+}
