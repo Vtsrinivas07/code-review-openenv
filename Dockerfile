@@ -35,5 +35,5 @@ EXPOSE 7860
 # Create directory for results
 RUN mkdir -p /app/results
 
-# Default command runs the Flask API server
-CMD ["python", "app.py"]
+# Default command runs the Flask API server with gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:7860", "--workers", "1", "--timeout", "120", "app:app"]
