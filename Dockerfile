@@ -20,15 +20,20 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy source code and task definitions
 COPY src/ ./src/
 COPY tasks/ ./tasks/
+COPY app.py .
 COPY inference.py .
 COPY openenv.yaml .
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
+ENV PORT=7860
+
+# Expose port for API
+EXPOSE 7860
 
 # Create directory for results
 RUN mkdir -p /app/results
 
-# Default command runs the baseline inference script
-CMD ["python", "inference.py"]
+# Default command runs the Flask API server
+CMD ["python", "app.py"]
