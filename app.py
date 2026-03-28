@@ -25,7 +25,8 @@ def reset():
     global env, current_obs, current_done
     
     try:
-        data = request.get_json() or {}
+        # Try to get JSON data, force=True to ignore content-type
+        data = request.get_json(force=True, silent=True) or {}
         task_id = data.get('task_id', 'easy')
         
         # Initialize environment if needed
@@ -60,7 +61,8 @@ def step():
         if current_done:
             return jsonify({"error": "Episode is done. Call /reset to start a new episode."}), 400
         
-        data = request.get_json()
+        # Try to get JSON data, force=True to ignore content-type
+        data = request.get_json(force=True, silent=True)
         if not data:
             return jsonify({"error": "No action provided"}), 400
         
