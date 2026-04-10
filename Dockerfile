@@ -36,5 +36,5 @@ EXPOSE 7860
 # Create directory for results
 RUN mkdir -p /app/results
 
-# Default command runs the FastAPI server with uvicorn
-CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]
+# Default command runs the Flask server with gunicorn
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:7860", "--workers", "2", "--timeout", "120"]
