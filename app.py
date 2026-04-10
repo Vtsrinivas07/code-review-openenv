@@ -74,7 +74,7 @@ def home():
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint."""
-    return jsonify({"status": "healthy"}), 200
+    return jsonify({"status": "healthy", "timestamp": __import__('time').time()}), 200
 
 
 @app.route('/reset', methods=['POST'])
