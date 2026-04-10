@@ -100,6 +100,11 @@ def info():
     }), 200
 
 
-if __name__ == '__main__':
+def main():
+    """Main entry point for the server."""
     port = int(os.getenv('PORT', 7860))
     app.run(host='0.0.0.0', port=port, debug=False)
+
+
+if __name__ == '__main__':
+    main()

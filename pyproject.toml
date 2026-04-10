@@ -1,0 +1,18 @@
+[project]
+name = "code-review-openenv"
+version = "0.1.0"
+description = "OpenEnv environment for code review"
+authors = [{ name = "Srinivas" }]
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "openenv-core"
+]
+
+[project.scripts]
+server = "app:main"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"

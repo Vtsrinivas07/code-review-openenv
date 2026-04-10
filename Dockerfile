@@ -19,6 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code and task definitions
 COPY src/ ./src/
+COPY server/ ./server/
 COPY tasks/ ./tasks/
 COPY app.py .
 COPY inference.py .
@@ -35,5 +36,5 @@ EXPOSE 7860
 # Create directory for results
 RUN mkdir -p /app/results
 
-# Default command runs the Flask API server with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:7860", "--workers", "1", "--timeout", "120", "app:app"]
+# Default command runs the FastAPI server with uvicorn
+CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]

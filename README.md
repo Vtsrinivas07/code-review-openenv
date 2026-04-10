@@ -1,3 +1,13 @@
+---
+title: Code Review Assistant
+emoji: 🔍
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+license: mit
+---
+
 # Code Review Assistant - OpenEnv Environment
 
 An AI-powered code review environment for the OpenEnv Course Round 1 competition. This environment simulates realistic pull request review scenarios where agents must identify bugs, security vulnerabilities, style violations, and performance issues, then provide actionable feedback and make approval decisions.
