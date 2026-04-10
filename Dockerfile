@@ -28,6 +28,7 @@ COPY openenv.yaml .
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 ENV PORT=7860
+ENV FLASK_APP=app.py
 
 # Expose port for API
 EXPOSE 7860
