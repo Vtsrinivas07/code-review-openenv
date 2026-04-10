@@ -34,7 +34,7 @@ def home():
     </head>
     <body>
         <h1>🔍 Code Review Assistant</h1>
-        <p class="status">✅ API Server Running</p>
+        <p class="status">✅ API Server Running - Ready for Evaluation</p>
         <p>OpenEnv environment for AI-powered code review evaluation.</p>
         
         <h2>Available Endpoints</h2>
