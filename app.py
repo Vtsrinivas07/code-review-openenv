@@ -13,6 +13,64 @@ current_obs = None
 current_done = False
 
 
+@app.route('/', methods=['GET'])
+def home():
+    """Homepage with API documentation."""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Code Review Assistant - OpenEnv API</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+            h1 { color: #2c3e50; }
+            .endpoint { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; }
+            .method { color: #fff; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+            .get { background: #28a745; }
+            .post { background: #007bff; }
+            code { background: #e9ecef; padding: 2px 6px; border-radius: 3px; }
+            .status { color: #28a745; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <h1>🔍 Code Review Assistant</h1>
+        <p class="status">✅ API Server Running</p>
+        <p>OpenEnv environment for AI-powered code review evaluation.</p>
+        
+        <h2>Available Endpoints</h2>
+        
+        <div class="endpoint">
+            <span class="method get">GET</span> <code>/health</code>
+            <p>Health check endpoint</p>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method get">GET</span> <code>/info</code>
+            <p>Get environment information and available tasks</p>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method post">POST</span> <code>/reset</code>
+            <p>Reset environment with a task</p>
+            <p>Body: <code>{"task_id": "easy|medium|hard"}</code></p>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method post">POST</span> <code>/step</code>
+            <p>Execute an action in the environment</p>
+            <p>Body: <code>{"action_type": "add_comment|view_file|approve|request_changes", ...}</code></p>
+        </div>
+        
+        <h2>Quick Test</h2>
+        <p>Try: <a href="/health">/health</a> | <a href="/info">/info</a></p>
+        
+        <hr>
+        <p><small>OpenEnv Course Round 1 Competition | Version 1.0.0</small></p>
+    </body>
+    </html>
+    """, 200
+
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint."""
