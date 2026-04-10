@@ -19,7 +19,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code and task definitions
 COPY src/ ./src/
-COPY server/ ./server/
 COPY tasks/ ./tasks/
 COPY app.py .
 COPY inference.py .
